@@ -82,6 +82,7 @@ runs:
         echo "ticket_summary=$ticket_summary" >> $GITHUB_ENV
         echo "ticket_description=$ticket_description" >> $GITHUB_ENV
         echo "ticket_type=$ticket_type" >> $GITHUB_ENV
+        echo "Jira API Response: $ticket_type"
       shell: bash
 
     - name: Get Release
@@ -127,8 +128,6 @@ runs:
               --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=AG-2&fields=summary,status,description' \
               --user '${{ inputs.jira-email }}:${{ inputs.jira-api-token }}' \
               --header 'Accept: application/json')
-
-          echo "Jira API Response: $jira_response"
 
           # Optionally, extract specific fields from the Jira response and add them to the release notes
           jira_summary=$(echo "$jira_response" | jq -r '.issues[].fields.summary')
