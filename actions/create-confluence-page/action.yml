@@ -135,6 +135,8 @@ runs:
             }
         }')
 
+        echo "Payload: $payload"
+
         response=$(curl --request POST \
             --url '${{ inputs.confluence-url }}/wiki/api/v2/pages' \
             --user '${{ inputs.confluence-email }}:${{ inputs.confluence-api-token }}' \
