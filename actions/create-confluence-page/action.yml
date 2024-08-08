@@ -125,18 +125,23 @@ runs:
         if [ "$TICKET_TYPE" == "Epic" ]; then
           echo "TICKET_TYPE is 'Epic', calling Jira API..."
           jira_response=$(curl --request GET \
-              --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=\"$TICKET_ISSUE_KEY\"&fields=summary,status,description' \
-              --user '${{ inputs.confluence-email }}:${{ inputs.confluence-api-token }}' \
+              --url "https://agrim.atlassian.net/rest/api/2/search?jql=parent=$TICKET_ISSUE_KEY&fields=summary,status,description" \
+              --user 'agrimav000@gmail.com:***' \
               --header 'Accept: application/json')
 
           echo "Jira API Response: $jira_response"
+          if echo "$jira_response" | jq -e '.issues' > /dev/null; then
+            jira_issues=$(echo "$jira_response" | jq -c '.issues[]')
+            for issue in $jira_issues; do
+              jira_summary=$(echo "$issue" | jq -r '.fields.summary')
+              jira_status=$(echo "$issue" | jq -r '.fields.status.name')
+              jira_description=$(echo "$issue" | jq -r '.fields.description')
 
-          # Optionally, extract specific fields from the Jira response and add them to the release notes
-          jira_summary=$(echo "$jira_response" | jq -r '.issues[].fields.summary')
-          jira_status=$(echo "$jira_response" | jq -r '.issues[].fields.status.name')
-          jira_description=$(echo "$jira_response" | jq -r '.issues[].fields.description')
-
-          RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issues:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
+              RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
+            done
+          else
+            echo "No issues found or API response is empty."
+          fi
         fi
 
         payload=$(jq -n \
