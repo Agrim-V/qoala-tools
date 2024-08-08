@@ -125,7 +125,7 @@ runs:
         if [ "$TICKET_TYPE" == "Epic" ]; then
           echo "TICKET_TYPE is 'Epic', calling Jira API..."
           jira_response=$(curl --request GET \
-              --url "https://agrim.atlassian.net/rest/api/2/search?jql=parent=$TICKET_ISSUE_KEY&fields=summary,status,description" \
+              --url "https://agrim.atlassian.net/rest/api/2/search?jql=parent=AG-2&fields=summary,status,description" \
               --user 'agrimav000@gmail.com:***' \
               --header 'Accept: application/json')
 
