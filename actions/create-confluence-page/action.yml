@@ -72,14 +72,16 @@ runs:
           -X GET -H "Content-Type: application/json" \
           "${{ inputs.confluence-url }}/rest/api/2/issue/${{ env.jira_issue_key }}")
         
-        jira_summary=$(echo $response | jq -r '.fields.summary')
-        jira_description=$(echo $response | jq -r '.fields.description')
-        if [ -z "$jira_summary" ]; then
+        ticket_summary=$(echo $response | jq -r '.fields.summary')
+        ticket_description=$(echo $response | jq -r '.fields.description')
+        ticket_type=$(echo $response | jq -r '.fields.issuetype.name')
+        if [ -z "$ticket_summary" ]; then
           echo "Failed to fetch JIRA issue details."
           exit 1
         fi
-        echo "jira_summary=$jira_summary" >> $GITHUB_ENV
-        echo "jira_description=$jira_description" >> $GITHUB_ENV
+        echo "ticket_summary=$ticket_summary" >> $GITHUB_ENV
+        echo "ticket_description=$ticket_description" >> $GITHUB_ENV
+        echo "ticket_type=$ticket_type" >> $GITHUB_ENV
       shell: bash
 
     - name: Get Release
@@ -111,12 +113,30 @@ runs:
         RELEASE_URL: ${{ fromJson(steps.get-release.outputs.result).url }}
         PR_DESCRIPTION: ${{ fromJson(steps.get_pr_data.outputs.result).body }}
         COMMIT_DETAILS: ${{ inputs.commit-details }}
-        JIRA_SUMMARY: ${{ env.jira_summary }}
-        JIRA_DESCRIPTION: ${{ env.jira_description }}
+        TICKET_SUMMARY: ${{ env.ticket_summary }}
+        TICKET_DESCRIPTION: ${{ env.ticket_description }}
+        TICKET_TYPE: ${{ env.ticket_type }}
       run: |
         COMMIT_DETAILS=$(echo "${COMMIT_DETAILS}" | sed 's/\\:/:/g')
-        RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\nCommit Details:\n${COMMIT_DETAILS}\nPr Description:\n${PR_DESCRIPTION}\nTicket Details:\n${JIRA_SUMMARY}\n{JIRA_DESCRIPTION}"
+        RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\nCommit Details:\n${COMMIT_DETAILS}\nPr Description:\n${PR_DESCRIPTION}\nTicket Details:\n${TICKET_SUMMARY}\n${TICKET_DESCRIPTION}"
         RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/## //g' | sed -r 's/<[^>]*>//g' | sed -r 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | sed -r 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | sed 's/\\n/<br\/>/g')
+
+        if [ "$TICKET_TYPE" == "epic" ]; then
+          echo "TICKET_TYPE is 'epic', calling Jira API..."
+          jira_response=$(curl --request GET \
+              --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=AG-2&fields=summary,status,description' \
+              --user '${{ inputs.jira-email }}:${{ inputs.jira-api-token }}' \
+              --header 'Accept: application/json')
+
+          echo "Jira API Response: $jira_response"
+
+          # Optionally, extract specific fields from the Jira response and add them to the release notes
+          jira_summary=$(echo "$jira_response" | jq -r '.issues[].fields.summary')
+          jira_status=$(echo "$jira_response" | jq -r '.issues[].fields.status.name')
+          jira_description=$(echo "$jira_response" | jq -r '.issues[].fields.description')
+
+          RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issues:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
+        fi
 
         payload=$(jq -n \
         --arg spaceId "${{ inputs.confluence-space-id }}" \
