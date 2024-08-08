@@ -125,8 +125,8 @@ runs:
         if [ "$TICKET_TYPE" == "Epic" ]; then
           echo "TICKET_TYPE is 'Epic', calling Jira API..."
           jira_response=$(curl --request GET \
-              --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=AG-2&fields=summary,status,description' \
-              --user '${{ inputs.jira-email }}:${{ inputs.jira-api-token }}' \
+              --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=${TICKET_TYPE}&fields=summary,status,description' \
+              --user '${{ inputs.confluence-email }}:${{ inputs.confluence-api-token }}' \
               --header 'Accept: application/json')
 
           # Optionally, extract specific fields from the Jira response and add them to the release notes
