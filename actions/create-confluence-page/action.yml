@@ -130,18 +130,14 @@ runs:
               --header 'Accept: application/json')
 
           echo "Jira API Response: $jira_response"
-          if echo "$jira_response" | jq -e '.issues' > /dev/null; then
-            jira_issues=$(echo "$jira_response" | jq -c '.issues[]')
-            for issue in $jira_issues; do
-              jira_summary=$(echo "$issue" | jq -r '.fields.summary')
-              jira_status=$(echo "$issue" | jq -r '.fields.status.name')
-              jira_description=$(echo "$issue" | jq -r '.fields.description')
+          jira_issues=$(echo "$jira_response" | jq -c '.issues[]')
+          for issue in $jira_issues; do
+            jira_summary=$(echo "$issue" | jq -r '.fields.summary')
+            jira_status=$(echo "$issue" | jq -r '.fields.status.name')
+            jira_description=$(echo "$issue" | jq -r '.fields.description')
 
-              RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
-            done
-          else
-            echo "No issues found or API response is empty."
-          fi
+            RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
+          done
         fi
 
         payload=$(jq -n \
