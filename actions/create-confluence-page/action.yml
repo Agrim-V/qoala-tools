@@ -122,8 +122,8 @@ runs:
         RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\nCommit Details:\n${COMMIT_DETAILS}\nPr Description:\n${PR_DESCRIPTION}\nTicket Details:\n${TICKET_SUMMARY}\n${TICKET_DESCRIPTION}"
         RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/## //g' | sed -r 's/<[^>]*>//g' | sed -r 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | sed -r 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | sed 's/\\n/<br\/>/g')
 
-        if [ "$TICKET_TYPE" == "epic" ]; then
-          echo "TICKET_TYPE is 'epic', calling Jira API..."
+        if [ "$TICKET_TYPE" == "Epic" ]; then
+          echo "TICKET_TYPE is 'Epic', calling Jira API..."
           jira_response=$(curl --request GET \
               --url 'https://agrim.atlassian.net/rest/api/2/search?jql=parent=AG-2&fields=summary,status,description' \
               --user '${{ inputs.jira-email }}:${{ inputs.jira-api-token }}' \
