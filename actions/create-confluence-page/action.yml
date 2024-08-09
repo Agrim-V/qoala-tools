@@ -130,8 +130,8 @@ runs:
               --header 'Accept: application/json')
 
           echo "Jira API Response: $jira_response"
-          extracted_data=$(jq '.issues[] | {key: .key, status: .fields.status.name, summary: .fields.summary, description: .fields.description}' jira_response)
-          echo "$extracted_data"
+          extracted_data=$(echo "$jira_response" | jq '.issues[] | {key: .key, status: .fields.status.name, summary: .fields.summary, description: .fields.description}')
+          echo "Extracted Data: $extracted_data"
           RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$extracted_data"
         fi
 
