@@ -20,20 +20,7 @@ runs:
         ref: ${{ inputs.ref }}
         fetch-depth: 0
 
-    - name: Determine if rerun
-      id: check_rerun
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_run" ]; then
-          echo "This is a rerun"
-          echo "::set-output name=rerun::true"
-        else
-          echo "This is a fresh run"
-          echo "::set-output name=rerun::false"
-        fi
-      shell: bash
-
     - name: Create Version Tagging
-      if: steps.check_rerun.outputs.rerun == 'false'
       id: version
       uses: codacy/git-version@2.7.0
       with:
@@ -42,7 +29,6 @@ runs:
         minor-identifier: "feat:"
 
     - name: Get Previous Tag
-      if: steps.check_rerun.outputs.rerun == 'false'
       id: previous-tag
       run: |
         git fetch --tags
@@ -51,7 +37,6 @@ runs:
       shell: bash
 
     - name: Push Tagging
-      if: steps.check_rerun.outputs.rerun == 'false'
       uses: actions/github-script@v5
       with:
         github-token: ${{ inputs.github-token }}
@@ -64,7 +49,6 @@ runs:
           })
 
     - name: Create release notes
-      if: steps.check_rerun.outputs.rerun == 'false'
       uses: actions/github-script@v5
       with:
         github-token: ${{ inputs.github-token }}
