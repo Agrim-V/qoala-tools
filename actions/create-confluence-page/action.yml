@@ -130,15 +130,9 @@ runs:
               --header 'Accept: application/json')
 
           echo "Jira API Response: $jira_response"
-          jira_issues=$(echo "$jira_response" | jq -c '.issues[]')
-          echo "Child issues: $jira_issues"
-          for issue in $jira_issues; do
-            jira_summary=$(echo "$issue" | jq -r '.fields.summary' || echo "No summary available")
-            jira_status=$(echo "$issue" | jq -r '.fields.status.name' || echo "No status available")
-            jira_description=$(echo "$issue" | jq -r '.fields.description' || echo "No description available")
-
-            RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\nSummary: $jira_summary\nStatus: $jira_status\nDescription: $jira_description"
-          done
+          extracted_data=$(jq '.issues[] | {key: .key, status: .fields.status.name, summary: .fields.summary, description: .fields.description}' jira_response.json)
+          echo "$extracted_data"
+          RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$extracted_data"
         fi
 
         payload=$(jq -n \
