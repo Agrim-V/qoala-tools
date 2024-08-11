@@ -121,9 +121,7 @@ runs:
         COMMIT_DETAILS=$(echo "${COMMIT_DETAILS}" | sed 's/\\:/:/g')
         RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\nCommit Details:\n${COMMIT_DETAILS}\nPr Description:\n${PR_DESCRIPTION}\nTicket Details:\n${TICKET_SUMMARY}\n${TICKET_DESCRIPTION}"
         echo "Data: $RELEASE_NOTES"
-        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/## //g' | sed -r 's/<[^>]*>//g' | sed -r 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | sed -r 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | sed 's/\\n/<br\/>/g')
-        echo "Data: $RELEASE_NOTES"
-        
+
         if [ "$TICKET_TYPE" == "Epic" ]; then
           echo "TICKET_TYPE is 'Epic', calling Jira API..."
           jira_response=$(curl --request GET \
@@ -136,6 +134,16 @@ runs:
           echo "Extracted Data: $extracted_data"
           RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$extracted_data"
         fi
+
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | \
+          sed 's/## //g' | \
+          sed -E 's/<[^>]*>//g' | \
+          sed -E 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | \
+          sed -E 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | \
+          sed 's/\\n/\n/g' | \
+          sed -E 's/\{\n *"key": "([^"]+)",\n *"status": "([^"]+)",\n *"summary": "([^"]+)",\n *"description": "([^"]+)"\n *\}/\n- *Key*: \1\n  *Status*: \2\n  *Summary*: \3\n  *Description*: \4\n/g'
+        )
+        echo "Data: $RELEASE_NOTES"
 
         payload=$(jq -n \
         --arg spaceId "${{ inputs.confluence-space-id }}" \
