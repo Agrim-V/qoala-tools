@@ -120,6 +120,12 @@ runs:
       run: |
         COMMIT_DETAILS=$(echo "${COMMIT_DETAILS}" | sed 's/\\:/:/g')
         RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\n\nCommit Details:\n${COMMIT_DETAILS}\n\nPr Description:\n${PR_DESCRIPTION}\n\nTicket Details:\n${TICKET_SUMMARY}\n${TICKET_DESCRIPTION}"
+        FORMATTED_RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | \
+          sed 's/## //g' | \
+          sed -E 's/<[^>]*>//g' | \
+          sed -E 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | \
+          sed -E 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | \
+          sed 's/\\n/\n/g')
         echo "Data: $RELEASE_NOTES"
 
         if [ "$TICKET_TYPE" == "Epic" ]; then
@@ -131,17 +137,7 @@ runs:
 
           echo "Jira API Response: $jira_response"
           extracted_data=$(echo "$jira_response" | jq '.issues[] | {key: .key, status: .fields.status.name, summary: .fields.summary, description: .fields.description}')
-          echo "Extracted Data: $extracted_data"
-          RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$extracted_data"
-        fi
-
-        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | \
-          sed 's/## //g' | \
-          sed -E 's/<[^>]*>//g' | \
-          sed -E 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | \
-          sed -E 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | \
-          sed 's/\\n/\n/g' | \
-          awk '
+          FORMATTED_JIRA_ISSUES=$(echo "${extracted_data}" | awk '
             BEGIN { in_jira=0; }
             {
               if ($1 == "{") { in_jira=1; if (NR > 1) print ""; }
@@ -150,8 +146,9 @@ runs:
               if (in_jira && $1 == "\"summary\":") { gsub(/,$/, "", $2); printf "  *Summary*: %s\n", $2 }
               if (in_jira && $1 == "\"description\":") { gsub(/,$/, "", $2); printf "  *Description*: %s\n", $2; in_jira=0 }
             }'
-        )
-        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/^Jira Issue:\n/*Jira Issues:* /')
+          )
+          RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$FORMATTED_JIRA_ISSUES"
+        fi
         echo "Data: $RELEASE_NOTES"
 
         payload=$(jq -n \
