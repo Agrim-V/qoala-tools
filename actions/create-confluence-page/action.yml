@@ -120,13 +120,6 @@ runs:
       run: |
         COMMIT_DETAILS=$(echo "${COMMIT_DETAILS}" | sed 's/\\:/:/g')
         RELEASE_NOTES="✅ New *${{ github.event.repository.name }}* Release [${{ inputs.version }}](${RELEASE_URL}) $(date)\n${RELEASE_NOTES}\n\nCommit Details:\n${COMMIT_DETAILS}\n\nPr Description:\n${PR_DESCRIPTION}\n\nTicket Details:\n${TICKET_SUMMARY}\n${TICKET_DESCRIPTION}"
-        FORMATTED_RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | \
-          sed 's/## //g' | \
-          sed -E 's/<[^>]*>//g' | \
-          sed -E 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | \
-          sed -E 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | \
-          sed 's/\\n/\n/g')
-        echo "Data: $RELEASE_NOTES"
 
         if [ "$TICKET_TYPE" == "Epic" ]; then
           echo "TICKET_TYPE is 'Epic', calling Jira API..."
@@ -149,6 +142,13 @@ runs:
           )
           RELEASE_NOTES="${RELEASE_NOTES}\n\nJira Issue:\n$FORMATTED_JIRA_ISSUES"
         fi
+        echo "Data: $RELEASE_NOTES"
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | \
+          sed 's/## //g' | \
+          sed -E 's/<[^>]*>//g' | \
+          sed -E 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g' | \
+          sed -E 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g' | \
+          sed 's/\\n/\n/g')
         echo "Data: $RELEASE_NOTES"
 
         payload=$(jq -n \
